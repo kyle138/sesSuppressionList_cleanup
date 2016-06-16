@@ -1,0 +1,15 @@
+{
+  "name": "SesSuppressionList_cleanup",
+  "version": "0.0.0",
+  "description": "Cleaning up bad emails in SesSuppressionList DynamoDB table",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "author": "",
+  "license": "BSD-2-Clause",
+  "dependencies": {
+    "get-emails": "~1.0.1",
+    "aws-sdk": "~2.4.0"
+  }
+}
