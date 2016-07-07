@@ -1,5 +1,6 @@
+var ddbOptions = require('./ddbOptions.json');
 var aws = require('aws-sdk');
-var ddb = new aws.DynamoDB({params: {TableName: 'SesSuppressionList-Copy'}});
+var ddb = new aws.DynamoDB(ddbOptions);
 var getEmails = require('get-emails');
 
 function stripThans(item, callback) {
@@ -30,12 +31,12 @@ function putSuppressedItem(items, callback) {
 function scanSesFailedTarget(ExclusiveStartKey, callback) {
   var params = {
     TableName: 'SesSuppressionList-Copy',
-    KeyConditionExpression: "contains(#email,:lthan)",
+    FilterExpression: "contains(#email,:lthan)",
     ExpressionAttributeNames:{
       "#email": "SesFailedTarget"
     },
     ExpressionAttributeValues: {
-      ":lthan": "<"
+      ":lthan": {"S":"<"}
     }
   };
   if(ExclusiveStartKey) params.ExclusiveStartKey = ExclusiveStartKey;
