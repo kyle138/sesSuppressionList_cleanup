@@ -52,7 +52,16 @@ function onScan(err, data) {
     data.Items.forEach(function(email) {
       console.log( JSON.stringify(email, null, 2));
     });
+
+    // If the total number of scanned items exceeds the maximum data set size
+    // limit of 1 MB, the scan stops and results are returned to the user as a
+    // LastEvaluatedKey value to continue the scan in a subsequent operation.
+    // We'll pass that back to scanSesFailedTarget as ExclusiveStartKey.
+    if (typeof data.LastEvaluatedKey != "undefined") {
+      console.log("Scanning for more...");
+      scanSesFailedTarget(data.LastEvaluatedKey, onScan);
+    }
   }
-}
+} // onScan
 
 scanSesFailedTarget(null, onScan);
