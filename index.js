@@ -15,16 +15,23 @@ function sanitizeEmail(item, callback) {
   return item;
 } //sanitizeEmails
 
-function putSanitizedItem(items, callback) {
-  for(var j=0, lenj=items.length; j<lenj; j++) {
-    ddb.putItem(items[j], function(err,data) {
+function putSanitizedItem(item, callback) {
+  console.log("****************************");  //Cleaner output in DEBUG
+  var sanitizedEmail = sanitizeEmail(item.SesFailedTarget.S);
+  if(sanitizedEmail == item.SesFailedTarget.S) {
+    console.log("Email already sanitized: "+sanitizedEmail+" :: "+item.SesFailedTarget.S);  //DEBUG
+  } else {
+    console.log("Email needs sanitizing: "+item.SesFailedTarget.S); //DEBUG
+    console.log("putItem: "+JSON.stringify(item, null, 2)); //DEBUG
+    /*  ddb.putItem(item, function(err,data) {
       if (err) {
         console.error('error','putting item in dynamodb failed: '+err);
       } else {
         console.log('great success: '+JSON.stringify(data, null, 2));
         //context.done(null,'');
       }
-    });
+    });*/
+    callback(item);
   }
 } //putSuppressedItem
 
@@ -35,13 +42,15 @@ function deleteDirtyItem(item, callback) {
       "SesFailedTarget": item.SesFailedTarget
     }
   }
-  ddb.deleteItem(params, function(err, data) {
-    if (err) {
-      console.error('error','Deleting item in dynamodb failed: '+err);
-    } else {
-      console.log('great success: '+JSON.stringify(data, null, 2));
-    }
-  });
+  console.log("deleteDirtyItem: "+JSON.stringify(params, null, 2));  //DEBUG
+
+  // ddb.deleteItem(params, function(err, data) {
+  //   if (err) {
+  //     console.error('error','Deleting item in dynamodb failed: '+err);
+  //   } else {
+  //     console.log('great success: '+JSON.stringify(data, null, 2));
+  //   }
+  // });
 } // deleteDirtyItem
 
 function scanSesFailedTarget(ExclusiveStartKey, callback) {
@@ -52,8 +61,8 @@ function scanSesFailedTarget(ExclusiveStartKey, callback) {
       "#email": "SesFailedTarget"
     },
     ExpressionAttributeValues: {
-      //":lthan": {"S":"<"}
-      ":lthan": {"S":"bounce@simulator.amazonses.com"} //DEBUG
+      ":lthan": {"S":"<"}
+      //":lthan": {"S":"bounce@simulator.amazonses.com"} //DEBUG
     }
   };
   if(ExclusiveStartKey) params.ExclusiveStartKey = ExclusiveStartKey;
@@ -67,7 +76,8 @@ function onScan(err, data, callback) {
   } else {
     console.log("Scan succeeded. Items returned: "+data.Count);
     data.Items.forEach(function(email) {
-      console.log( JSON.stringify(email, null, 2));
+      //console.log( JSON.stringify(email, null, 2)); //DEBUG
+      putSanitizedItem(email,deleteDirtyItem);
       //**************
       //START HERE
       //**************
