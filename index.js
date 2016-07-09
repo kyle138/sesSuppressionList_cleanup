@@ -17,45 +17,51 @@ function sanitizeEmail(item, callback) {
 
 function putSanitizedItem(item, callback) {
   console.log("****************************");  //Cleaner output in DEBUG
+  var dirtyEmail = item.SesFailedTarget;
   var sanitizedEmail = sanitizeEmail(item.SesFailedTarget.S);
-  if(sanitizedEmail == item.SesFailedTarget.S) {
-    console.log("Email already sanitized: "+sanitizedEmail+" :: "+item.SesFailedTarget.S);  //DEBUG
+  if(sanitizedEmail == dirtyEmail.S) {
+    console.log("Email already sanitized: "+sanitizedEmail+" :: "+dirtyEmail.S);  //DEBUG
   } else {
     console.log("Email needs sanitizing: "+item.SesFailedTarget.S); //DEBUG
-    console.log("putItem: "+JSON.stringify(item, null, 2)); //DEBUG
-    /*  ddb.putItem(item, function(err,data) {
+    item.SesFailedTarget = {"S": sanitizedEmail};
+    var params = {
+      TableName: "SesSuppressionList",
+      Item: item
+    }
+    console.log("putItem: "+JSON.stringify(params, null, 2)); //DEBUG
+    ddb.putItem(params, function(err,data) {
       if (err) {
         console.error('error','putting item in dynamodb failed: '+err);
       } else {
         console.log('great success: '+JSON.stringify(data, null, 2));
         //context.done(null,'');
+          callback(dirtyEmail);
       }
-    });*/
-    callback(item);
+    });
   }
 } //putSuppressedItem
 
-function deleteDirtyItem(item, callback) {
+function deleteDirtyItem(key, callback) {
   var params = {
-    TableName: 'SesSuppressionList-Copy',
+    TableName: 'SesSuppressionList',
     Key: {
-      "SesFailedTarget": item.SesFailedTarget
+      "SesFailedTarget": key
     }
   }
   console.log("deleteDirtyItem: "+JSON.stringify(params, null, 2));  //DEBUG
 
-  // ddb.deleteItem(params, function(err, data) {
-  //   if (err) {
-  //     console.error('error','Deleting item in dynamodb failed: '+err);
-  //   } else {
-  //     console.log('great success: '+JSON.stringify(data, null, 2));
-  //   }
-  // });
+  ddb.deleteItem(params, function(err, data) {
+    if (err) {
+      console.error('error','Deleting item in dynamodb failed: '+err);
+    } else {
+      console.log('great success: '+JSON.stringify(data, null, 2));
+    }
+  });
 } // deleteDirtyItem
 
 function scanSesFailedTarget(ExclusiveStartKey, callback) {
   var params = {
-    TableName: 'SesSuppressionList-Copy',
+    TableName: 'SesSuppressionList',
     FilterExpression: "contains(#email,:lthan)",
     ExpressionAttributeNames:{
       "#email": "SesFailedTarget"
@@ -66,7 +72,7 @@ function scanSesFailedTarget(ExclusiveStartKey, callback) {
     }
   };
   if(ExclusiveStartKey) params.ExclusiveStartKey = ExclusiveStartKey;
-  console.log("Scanning SesSuppressionList-Copy");  //DEBUG
+  console.log("Scanning SesSuppressionList");  //DEBUG
   ddb.scan(params, callback);
 } // scanSesFailedTarget
 
